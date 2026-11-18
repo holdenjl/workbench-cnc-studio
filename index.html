@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UGS Studio — WorkBench 200 Series CNC / 3DP Controller</title>
+  <style>
+    :root {
+      --bg-base: #0b0f17;
+      --bg-panel: #111827;
+      --bg-card: #1a2333;
+      --bg-input: #0d131f;
+      --border: #28354a;
+      --border-hi: #3b4f6e;
+      --text: #e2e8f0;
+      --text-muted: #8b9bb4;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-base);
+      color: var(--text);
+      font-family: var(--font-sans);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    header {
+      height: 54px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-logo {
+      width: 32px; height: 32px; border-radius: 7px;
+      background: linear-gradient(135deg, #0284c7, #10b981);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-family: var(--font-mono); font-size: 14px; color: #fff;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+    }
+    .brand-title { font-weight: 700; font-size: 15px; }
+    .brand-sub { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+    .conn-bar { display: flex; align-items: center; gap: 8px; }
+
+    select, input[type="text"], input[type="number"] {
+      background: var(--bg-input); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 9px; border-radius: 5px; font-size: 12px; font-family: var(--font-mono); outline: none;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+
+    button {
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 11px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.12s ease; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    button:hover { background: #243047; border-color: var(--border-hi); }
+    button:active { transform: translateY(1px); }
+
+    .btn-primary { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-success { background: #059669; border-color: #10b981; color: #fff; }
+    .btn-success:hover { background: #047857; }
+    .btn-amber { background: #d97706; border-color: #f59e0b; color: #fff; }
+    .btn-amber:hover { background: #b45309; }
+    .btn-danger { background: #dc2626; border-color: #f87171; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+
+    .status-pill {
+      padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px;
+      display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--bg-input);
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+    .status-pill.idle .status-dot { background: var(--emerald); box-shadow: 0 0 8px var(--emerald); }
+    .status-pill.running .status-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .status-pill.paused .status-dot { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+    .status-pill.disconnected .status-dot { background: var(--danger); }
+
+    .estop-btn {
+      background: linear-gradient(135deg, #dc2626, #991b1b); border: 2px solid #fca5a5;
+      color: #fff; font-weight: 800; padding: 6px 14px; letter-spacing: 0.6px;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+    }
+    .estop-btn:hover { background: #ef4444; }
+
+    .workspace {
+      flex: 1; display: grid; grid-template-columns: 350px 1fr 410px;
+      gap: 8px; padding: 8px; overflow: hidden;
+    }
+    .col { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+    .panel {
+      background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+      display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+    }
+    .panel-fill { flex: 1; min-height: 0; }
+    .panel-header {
+      padding: 8px 12px; background: rgba(26, 35, 51, 0.7); border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px;
+      color: var(--text-muted); display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-body { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+
+    .dro-list { display: flex; flex-direction: column; gap: 6px; }
+    .dro-row {
+      display: grid; grid-template-columns: 44px 1fr auto auto; align-items: center;
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; gap: 8px;
+    }
+    .axis-tag { font-family: var(--font-mono); font-weight: 800; font-size: 16px; text-align: center; padding: 3px 0; border-radius: 4px; }
+    .axis-X { color: #f87171; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .axis-Y { color: #4ade80; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .axis-Z { color: #60a5fa; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .axis-E { color: #c084fc; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); font-size: 13px; }
+
+    .dro-val {
+      font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: #f8fafc;
+      text-align: right; padding-right: 6px; cursor: pointer; border-radius: 4px;
+    }
+    .dro-val:hover { background: rgba(56, 189, 248, 0.1); color: var(--accent); }
+
+    .homed-badge { font-size: 9px; font-family: var(--font-mono); padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }
+    .homed-yes { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .homed-no { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .jog-layout { display: grid; grid-template-columns: 1fr 68px 62px; gap: 8px; align-items: stretch; }
+    .xy-pad { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 44px); gap: 5px; }
+    .z-pad, .e-pad { display: grid; grid-template-rows: 44px 44px 44px; gap: 5px; }
+
+    .jog-btn {
+      font-family: var(--font-mono); font-weight: 700; font-size: 12px; background: #192336;
+      border: 1px solid #2d3e5a; border-radius: 6px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; line-height: 1.1;
+    }
+    .jog-btn:hover { background: #23324d; border-color: var(--accent); color: #fff; }
+    .jog-btn.z-btn { background: rgba(59, 130, 246, 0.13); border-color: rgba(59, 130, 246, 0.35); color: #93c5fd; }
+    .jog-btn.z-btn:hover { background: rgba(59, 130, 246, 0.28); border-color: #60a5fa; }
+    .jog-btn.e-btn { background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.35); color: #d8b4fe; }
+
+    .step-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .step-pill {
+      padding: 5px 2px; font-family: var(--font-mono); font-size: 11px; text-align: center;
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+    }
+    .step-pill.active { background: var(--accent); color: #0b0f17; border-color: #7dd3fc; font-weight: 800; }
+
+    .feed-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field-group { display: flex; flex-direction: column; gap: 3px; }
+    .field-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; }
+
+    .endstop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+    .es-box { background: var(--bg-input); border: 1px solid var(--border); border-radius: 5px; padding: 5px; text-align: center; font-family: var(--font-mono); font-size: 10px; }
+    .es-box.triggered { border-color: var(--danger); background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+    .es-box.open { border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; }
+
+    .temp-grid { display: flex; flex-direction: column; gap: 6px; }
+    .temp-row {
+      display: grid; grid-template-columns: 92px 1fr 68px 52px; align-items: center; gap: 6px;
+      background: var(--bg-input); border: 1px solid var(--border); padding: 5px 8px; border-radius: 5px;
+      font-family: var(--font-mono); font-size: 11px;
+    }
+
+    .viz-container { position: relative; flex: 1; background: radial-gradient(circle at center, #131c2e 0%, #090d15 100%); overflow: hidden; }
+    #toolpathCanvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    #toolpathCanvas:active { cursor: grabbing; }
+
+    .viz-overlay-top { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; }
+    .viz-toolbar {
+      display: flex; gap: 5px; pointer-events: auto; background: rgba(15, 23, 42, 0.85);
+      padding: 5px; border-radius: 6px; border: 1px solid var(--border); backdrop-filter: blur(6px);
+    }
+    .viz-hud {
+      position: absolute; bottom: 10px; left: 10px; right: 10px; display: flex;
+      justify-content: space-between; align-items: flex-end; pointer-events: none;
+      font-family: var(--font-mono); font-size: 11px;
+    }
+    .hud-box { background: rgba(11, 15, 23, 0.85); border: 1px solid var(--border); padding: 7px 10px; border-radius: 6px; color: var(--text-muted); line-height: 1.45; }
+
+    .job-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-family: var(--font-mono); font-size: 11px; }
+    .stat-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: 5px; padding: 6px 8px; }
+    .stat-val { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+    .progress-wrap { background: var(--bg-input); border: 1px solid var(--border); height: 10px; border-radius: 999px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #0284c7, #10b981); transition: width 0.2s ease; }
+
+    #gcodeEditor {
+      width: 100%; height: 170px; background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 6px; color: #a5f3fc; font-family: var(--font-mono); font-size: 12px;
+      padding: 8px; resize: none; outline: none; line-height: 1.45; user-select: text;
+    }
+
+    .console-output {
+      flex: 1; background: #070a10; border: 1px solid var(--border); border-radius: 6px;
+      padding: 8px; font-family: var(--font-mono); font-size: 11px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 3px; user-select: text; min-height: 150px;
+    }
+    .log-line { word-break: break-all; line-height: 1.35; }
+    .log-time { color: #475569; margin-right: 6px; }
+    .log-TX { color: #38bdf8; }
+    .log-RX { color: #94a3b8; }
+    .log-SYS { color: #10b981; font-weight: 600; }
+    .log-ERR { color: #f87171; font-weight: 700; }
+
+    .console-input-row { display: flex; gap: 6px; }
+    .console-input-row input { flex: 1; }
+    .macro-strip { display: flex; flex-wrap: wrap; gap: 4px; }
+    .macro-btn { font-family: var(--font-mono); font-size: 10px; padding: 4px 7px; background: #162032; border-color: #293852; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-logo">UGS</div>
+      <div>
+        <div class="brand-title" id="machineTitle">WorkBench 200 Series — CNC &amp; 3DP Studio</div>
+        <div class="brand-sub" id="firmwareSub">Duet Ethernet 1.0 • RepRapFirmware 1.19.2 • 1000×1000×510 mm</div>
+      </div>
+    </div>
+    <div class="conn-bar">
+      <div class="status-pill disconnected" id="statusPill">
+        <span class="status-dot"></span>
+        <span id="statusText">DISCONNECTED</span>
+      </div>
+      <select id="portSelect" title="Serial Port"><option value="COM6">COM6 (Duet)</option></select>
+      <button onclick="refreshPorts()" title="Refresh Serial Ports">↻</button>
+      <select id="baudSelect" title="Baud Rate">
+        <option value="115200" selected>115200</option>
+        <option value="250000">250000</option>
+      </select>
+      <button class="btn-primary" id="connBtn" onclick="toggleConnect()">Connect</button>
+      <button class="estop-btn" onclick="emergencyStop()" title="Immediate Halt (M112) + Reset (M999)">⚠ E-STOP</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <div class="col">
+      <div class="panel">
+        <div class="panel-header">
+          <span>Digital Readout (DRO)</span>
+          <div style="display:flex; gap:4px;">
+            <button style="padding:2px 7px; font-size:10px;" onclick="sendCmd('G92 X0 Y0 Z0')">Zero XYZ</button>
+            <button style="padding:2px 7px; font-size:10px;" onclick="sendCmd('G90\nG1 X0 Y0 F3000')">Go XY0</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="dro-list">
+            <div class="dro-row">
+              <span class="axis-tag axis-X">X</span>
+              <span class="dro-val" id="droX" onclick="promptSetAxis('X')">0.000</span>
+              <span class="homed-badge homed-no" id="homedX">UNHOMED</span>
+              <button style="padding:4px 7px; font-size:10px;" onclick="sendCmd('G92 X0')">X=0</button>
+            </div>
+            <div class="dro-row">
+              <span class="axis-tag axis-Y">Y</span>
+              <span class="dro-val" id="droY" onclick="promptSetAxis('Y')">0.000</span>
+              <span class="homed-badge homed-no" id="homedY">UNHOMED</span>
+              <button style="padding:4px 7px; font-size:10px;" onclick="sendCmd('G92 Y0')">Y=0</button>
+            </div>
+            <div class="dro-row">
+              <span class="axis-tag axis-Z">Z</span>
+              <span class="dro-val" id="droZ" onclick="promptSetAxis('Z')">0.000</span>
+              <span class="homed-badge homed-no" id="homedZ">UNHOMED</span>
+              <button style="padding:4px 7px; font-size:10px;" onclick="sendCmd('G92 Z0')">Z=0</button>
+            </div>
+            <div class="dro-row">
+              <span class="axis-tag axis-E">E0/1</span>
+              <span class="dro-val" id="droE" style="font-size:14px;">0.0 / 0.0</span>
+              <span class="homed-badge homed-yes" id="mcuBadge">MCU --°C</span>
+              <button style="padding:4px 7px; font-size:10px;" onclick="sendCmd('G92 E0')">E=0</button>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:4px;">
+            <button class="btn-primary" style="font-size:11px; padding:5px;" onclick="sendCmd('G28')">Home All</button>
+            <button style="font-size:11px; padding:5px;" onclick="sendCmd('G28 X')">Home X</button>
+            <button style="font-size:11px; padding:5px;" onclick="sendCmd('G28 Y')">Home Y</button>
+            <button style="font-size:11px; padding:5px;" onclick="sendCmd('G28 Z')">Home Z</button>
+            <button style="font-size:11px; padding:5px;" onclick="sendCmd('M84')">Motors Off</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span>Jog Control Keypad</span>
+          <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:10px; color:var(--accent);">
+            <input type="checkbox" id="kbJogToggle" /> Keyboard Arrows
+          </label>
+        </div>
+        <div class="panel-body">
+          <div class="jog-layout">
+            <div class="xy-pad">
+              <button class="jog-btn" onclick="jogDiag(-1, 1)">↖<span style="font-size:9px; color:var(--text-muted)">-X +Y</span></button>
+              <button class="jog-btn" onclick="jogAxis('Y', 1)">▲<span style="font-size:10px; color:#4ade80">+Y</span></button>
+              <button class="jog-btn" onclick="jogDiag(1, 1)">↗<span style="font-size:9px; color:var(--text-muted)">+X +Y</span></button>
+              <button class="jog-btn" onclick="jogAxis('X', -1)">◀ <span style="font-size:10px; color:#f87171">-X</span></button>
+              <button class="jog-btn" onclick="sendCmd('M114')">POS<span style="font-size:9px; color:var(--text-muted)">M114</span></button>
+              <button class="jog-btn" onclick="jogAxis('X', 1)"><span style="font-size:10px; color:#f87171">+X</span> ▶</button>
+              <button class="jog-btn" onclick="jogDiag(-1, -1)">↙<span style="font-size:9px; color:var(--text-muted)">-X -Y</span></button>
+              <button class="jog-btn" onclick="jogAxis('Y', -1)">▼<span style="font-size:10px; color:#4ade80">-Y</span></button>
+              <button class="jog-btn" onclick="jogDiag(1, -1)">↘<span style="font-size:9px; color:var(--text-muted)">+X -Y</span></button>
+            </div>
+            <div class="z-pad">
+              <button class="jog-btn z-btn" onclick="jogAxis('Z', 1)">▲ +Z</button>
+              <button class="jog-btn" style="font-size:10px;" onclick="sendCmd('G92 Z0')">Zero Z</button>
+              <button class="jog-btn z-btn" onclick="jogAxis('Z', -1)">▼ -Z</button>
+            </div>
+            <div class="e-pad">
+              <button class="jog-btn e-btn" onclick="jogAxis('E', 1)">+E Extr</button>
+              <button class="jog-btn" style="font-size:10px;" onclick="sendCmd('T0')">Tool 0</button>
+              <button class="jog-btn e-btn" onclick="jogAxis('E', -1)">-E Retr</button>
+            </div>
+          </div>
+          <div>
+            <div class="field-label" style="margin-bottom:4px;">Step Distance (mm)</div>
+            <div class="step-bar" id="stepBar">
+              <div class="step-pill" onclick="setStep(0.01)">0.01</div>
+              <div class="step-pill" onclick="setStep(0.1)">0.1</div>
+              <div class="step-pill" onclick="setStep(1)">1</div>
+              <div class="step-pill" onclick="setStep(5)">5</div>
+              <div class="step-pill active" onclick="setStep(10)">10</div>
+              <div class="step-pill" onclick="setStep(50)">50</div>
+              <div class="step-pill" onclick="setStep(100)">100</div>
+            </div>
+          </div>
+          <div class="feed-row">
+            <div class="field-group">
+              <span class="field-label">XY Feedrate (mm/min)</span>
+              <input type="number" id="xyFeed" value="3000" min="60" max="12000" step="100" />
+            </div>
+            <div class="field-group">
+              <span class="field-label">Z Feedrate (max 180)</span>
+              <input type="number" id="zFeed" value="180" min="10" max="180" step="10" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span>Sensors, Probe &amp; Volcanos</span>
+          <button style="padding:2px 6px; font-size:10px;" onclick="sendCmd('M119')">Poll M119</button>
+        </div>
+        <div class="panel-body">
+          <div class="endstop-grid">
+            <div class="es-box" id="esX">X: --</div>
+            <div class="es-box" id="esY">Y: --</div>
+            <div class="es-box" id="esZ">Z: --</div>
+            <div class="es-box" id="esProbe">Probe: --</div>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:4px;">
+            <button style="font-size:10px; padding:4px;" onclick="sendCmd('M280 P7 S10 I1')">BLT Deploy</button>
+            <button style="font-size:10px; padding:4px;" onclick="sendCmd('M280 P7 S90 I1')">BLT Stow</button>
+            <button style="font-size:10px; padding:4px;" onclick="sendCmd('M280 P7 S60 I1')">BLT Clear</button>
+            <button style="font-size:10px; padding:4px;" onclick="sendCmd('M208 X-1000 Y-1000 Z-510 S1\nM564 S0 H0\nG30')" title="Unlock negative Z travel and run G30 Z-probe">Probe Z</button>
+          </div>
+          <div class="temp-grid">
+            <div class="temp-row">
+              <span>Bed (H0)</span>
+              <span id="tempBed" style="color:#38bdf8; font-weight:700;">-- / 0°C</span>
+              <input type="number" id="targetBed" value="0" min="0" max="150" style="width:100%; padding:3px 5px;" />
+              <button style="padding:3px 6px; font-size:10px;" onclick="setBedTemp()">Set</button>
+            </div>
+            <div class="temp-row">
+              <span>Volcano T0</span>
+              <span id="tempT0" style="color:#f59e0b; font-weight:700;">-- / 0°C</span>
+              <input type="number" id="targetT0" value="0" min="0" max="300" style="width:100%; padding:3px 5px;" />
+              <button style="padding:3px 6px; font-size:10px;" onclick="setToolTemp(0)">Set</button>
+            </div>
+            <div class="temp-row">
+              <span>Volcano T1</span>
+              <span id="tempT1" style="color:#f87171; font-weight:700;">-- / 0°C</span>
+              <input type="number" id="targetT1" value="0" min="0" max="300" style="width:100%; padding:3px 5px;" />
+              <button style="padding:3px 6px; font-size:10px;" onclick="setToolTemp(1)">Set</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel panel-fill">
+        <div class="panel-header">
+          <span>3D Toolpath &amp; Live Machine Visualizer</span>
+          <span id="bboxLabel" style="font-family:var(--font-mono); font-size:10px;">Envelope: 1000×1000×510 mm</span>
+        </div>
+        <div class="viz-container">
+          <canvas id="toolpathCanvas"></canvas>
+          <div class="viz-overlay-top">
+            <div class="viz-toolbar">
+              <button style="padding:4px 8px; font-size:11px;" onclick="setCameraPreset('iso')">3D Iso</button>
+              <button style="padding:4px 8px; font-size:11px;" onclick="setCameraPreset('top')">Top XY</button>
+              <button style="padding:4px 8px; font-size:11px;" onclick="setCameraPreset('front')">Front XZ</button>
+              <button style="padding:4px 8px; font-size:11px;" onclick="setCameraPreset('side')">Side YZ</button>
+              <button style="padding:4px 8px; font-size:11px;" onclick="fitCameraToPath()">Fit Path</button>
+            </div>
+            <div class="viz-toolbar">
+              <label style="display:flex; align-items:center; gap:5px; font-size:11px; padding:0 6px; cursor:pointer;">
+                <input type="checkbox" id="showRapids" checked onchange="renderScene()" /> Rapids (G0)
+              </label>
+              <label style="display:flex; align-items:center; gap:5px; font-size:11px; padding:0 6px; cursor:pointer;">
+                <input type="checkbox" id="followTool" onchange="renderScene()" /> Center Toolhead
+              </label>
+            </div>
+          </div>
+          <div class="viz-hud">
+            <div class="hud-box" id="hudPathInfo">
+              <div><strong style="color:#38bdf8">---</strong> Rapid (G0) &nbsp; <strong style="color:#f59e0b">───</strong> Feed (G1) &nbsp; <strong style="color:#10b981">───</strong> Completed</div>
+              <div id="pathStatsText">Segments: 0 | Distance: 0.0 mm</div>
+            </div>
+            <div class="hud-box" style="text-align:right;">
+              <div>Drag Left: Orbit • Drag Right/Shift: Pan • Wheel: Zoom</div>
+              <div id="liveToolHud" style="color:#f8fafc; font-weight:700;">Toolhead: X 0.00  Y 0.00  Z 0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <div class="panel-header">
+          <span>G-Code Program &amp; Job Streamer</span>
+          <div style="display:flex; gap:4px;">
+            <select id="sampleSelect" onchange="loadPresetProgram(this.value)" style="padding:2px 6px; font-size:10px;">
+              <option value="">+ Load Program / Pattern...</option>
+              <option value="cf30_front">CF30_front_in_template (556×523mm)</option>
+              <option value="cf30_back">CF30_back_in_template (535×537mm)</option>
+              <option value="sleeve">Sleeve DXF - Sketch 4 (50×272mm)</option>
+              <option value="square">20mm Square Around Current XY</option>
+              <option value="diamond">30mm Diamond + Z-Hop</option>
+              <option value="z_cycle">Z Axis ±10mm Cycle Test</option>
+              <option value="circle">25mm Octagon / Circle Path</option>
+            </select>
+            <label class="btn-primary" style="padding:2px 8px; font-size:10px; border-radius:4px; cursor:pointer;">
+              Open GCode / DXF
+              <input type="file" id="fileInput" accept=".dxf,.gcode,.nc,.g,.tap,.txt" style="display:none" onchange="handleFileUpload(event)" />
+            </label>
+            <button style="padding:2px 8px; font-size:10px;" onclick="downloadCurrentGCode()">⬇ Save .gcode</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="job-stats">
+            <div class="stat-card">
+              <div class="field-label">Program Progress</div>
+              <div class="stat-val" id="jobProgressText">0 / 0</div>
+            </div>
+            <div class="stat-card">
+              <div class="field-label">Elapsed Time</div>
+              <div class="stat-val" id="jobElapsedText">0.0s</div>
+            </div>
+            <div class="stat-card">
+              <div class="field-label">Active Command</div>
+              <div class="stat-val" id="jobActiveCmd" style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Idle</div>
+            </div>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="jobProgressBar"></div></div>
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px;">
+            <button class="btn-success" onclick="startJob()">▶ Run Job</button>
+            <button class="btn-amber" onclick="pauseJob()">⏸ Pause</button>
+            <button onclick="stepJob()">⏭ Step 1</button>
+            <button class="btn-danger" onclick="stopJob()">⏹ Stop</button>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto; gap:5px; align-items:end; background:var(--bg-input); border:1px solid var(--border); padding:7px 8px; border-radius:6px;">
+            <div class="field-group">
+              <span class="field-label">Cut Feed</span>
+              <input type="number" id="gcodeCutFeed" value="150" min="10" max="12000" step="10" onkeydown="if(event.key==='Enter') applyFeedrateToGCode()" title="Tool cutting/tracing feedrate in mm/min (F...)" />
+            </div>
+            <div class="field-group">
+              <span class="field-label">Rapid (G0)</span>
+              <input type="number" id="gcodeTravelFeed" value="3600" min="60" max="12000" step="100" onkeydown="if(event.key==='Enter') applyFeedrateToGCode()" title="Non-cutting rapid travel feedrate in mm/min" />
+            </div>
+            <div class="field-group">
+              <span class="field-label">Z Feed</span>
+              <input type="number" id="gcodeZFeed" value="150" min="10" max="180" step="10" onkeydown="if(event.key==='Enter') applyFeedrateToGCode()" title="Z plunge/retract feedrate in mm/min (max 180)" />
+            </div>
+            <div class="field-group">
+              <span class="field-label">Work Z</span>
+              <input type="number" id="gcodeCutZ" value="0.0" min="-500" max="500" step="0.5" onkeydown="if(event.key==='Enter') applyFeedrateToGCode()" title="Cutting/probing Z height in mm (can be negative, e.g. -2.0)" />
+            </div>
+            <div class="field-group">
+              <span class="field-label">Safe Z</span>
+              <input type="number" id="gcodeSafeZ" value="5.0" min="-500" max="500" step="1.0" onkeydown="if(event.key==='Enter') applyFeedrateToGCode()" title="Safe travel clearance Z height in mm" />
+            </div>
+            <button class="btn-primary" style="height:28px; padding:0 9px; font-size:11px;" onclick="applyFeedrateToGCode()" title="Apply feedrates and Z heights to current G-code program">Apply</button>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="field-label" id="editorFileLabel">G-Code Editor (Editable)</span>
+            <button style="padding:2px 8px; font-size:10px;" onclick="syncEditorToJob()">↻ Parse &amp; Load Editor G-Code</button>
+          </div>
+          <textarea id="gcodeEditor" spellcheck="false" oninput="onEditorChanged()"></textarea>
+        </div>
+      </div>
+
+      <div class="panel panel-fill">
+        <div class="panel-header">
+          <span>G-Code Serial Console</span>
+          <button style="padding:2px 6px; font-size:10px;" onclick="clearConsole()">Clear</button>
+        </div>
+        <div class="panel-body" style="flex:1; min-height:0;">
+          <div class="macro-strip">
+            <button class="macro-btn" onclick="sendCmd('M208 X-1000 Y-1000 Z-510 S1\nM564 S0 H0')" title="Allow Z and probe to go below Z=0">Unlock -Z</button>
+            <button class="macro-btn" onclick="sendCmd('M114')">M114 Pos</button>
+            <button class="macro-btn" onclick="sendCmd('M115')">M115 Info</button>
+            <button class="macro-btn" onclick="sendCmd('M119')">M119 Endstops</button>
+            <button class="macro-btn" onclick="sendCmd('M122')">M122 Diag</button>
+            <button class="macro-btn" onclick="sendCmd('M503')">M503 Config</button>
+            <button class="macro-btn" onclick="sendCmd('M552')">M552 IP</button>
+            <button class="macro-btn" onclick="sendCmd('M400')">M400 Wait</button>
+            <button class="macro-btn" onclick="sendCmd('M999')">M999 Reset</button>
+          </div>
+          <div class="console-output" id="consoleOutput"></div>
+          <div class="console-input-row">
+            <input type="text" id="cmdInput" placeholder="Send G-code (e.g. G91 | G1 Z10 F180 | M114)..." onkeydown="handleCmdKey(event)" />
+            <button class="btn-primary" onclick="sendInputCommand()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let connected = false;
+    let currentStep = 10.0;
+    let lastLogId = 0;
+    let machinePos = { X: 121.4, Y: -31.1, Z: -54.5, E0: 0.0, E1: 0.0 };
+    let jobState = { index: 0, total: 0, running: false, paused: false };
+    let cmdHistory = [];
+    let historyIdx = -1;
+    let currentFilename = "Sleeve DXF - Sketch 4.gcode";
+    let toolpathSegments = [];
+    let pathBounds = { minX: 0, maxX: 50, minY: 0, maxY: 272, minZ: 0, maxZ: 5 };
+
+    const canvas = document.getElementById("toolpathCanvas");
+    const ctx = canvas.getContext("2d");
+    let cam = { yaw: -0.65, pitch: 0.55, distance: 350, target: { x: 25, y: 136, z: 0 } };
+    let dragState = { active: false, mode: "orbit", lastX: 0, lastY: 0 };
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+      setupCanvasControls();
+      await refreshPorts();
+      await pollBackendState();
+      await loadPresetProgram("cf30_front");
+      setInterval(pollBackendState, 350);
+    });
+
+    async function refreshPorts() {
+      try {
+        const res = await fetch("/api/ports");
+        const data = await res.json();
+        const sel = document.getElementById("portSelect");
+        const prev = sel.value || "COM6";
+        sel.innerHTML = "";
+        if (data.ports && data.ports.length > 0) {
+          data.ports.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.device;
+            opt.textContent = `${p.device} — ${p.description}`;
+            sel.appendChild(opt);
+          });
+          if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+        } else {
+          const opt = document.createElement("option");
+          opt.value = "COM6";
+          opt.textContent = "COM6 (No active ports detected)";
+          sel.appendChild(opt);
+        }
+      } catch (e) {}
+    }
+
+    async function toggleConnect() {
+      const port = document.getElementById("portSelect").value;
+      const baudrate = parseInt(document.getElementById("baudSelect").value, 10);
+      if (!connected) {
+        await fetch("/api/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ port, baudrate })
+        });
+      } else {
+        await fetch("/api/disconnect", { method: "POST" });
+      }
+      await pollBackendState();
+    }
+
+    async function emergencyStop() {
+      await fetch("/api/estop", { method: "POST" });
+      await pollBackendState();
+    }
+
+    async function pollBackendState() {
+      try {
+        const res = await fetch(`/api/state?since=${lastLogId}`);
+        const state = await res.json();
+        connected = state.connected;
+        const pill = document.getElementById("statusPill");
+        const statusTxt = document.getElementById("statusText");
+        const connBtn = document.getElementById("connBtn");
+
+        statusTxt.textContent = state.status.toUpperCase();
+        pill.className = "status-pill " + (!connected ? "disconnected" : state.status === "Running" ? "running" : state.status === "Paused" ? "paused" : "idle");
+        connBtn.textContent = connected ? "Disconnect" : "Connect";
+        connBtn.className = connected ? "btn-danger" : "btn-primary";
+
+        if (state.machine_name) document.getElementById("machineTitle").textContent = `${state.machine_name} — UGS Studio`;
+        if (state.pos) {
+          machinePos = state.pos;
+          document.getElementById("droX").textContent = Number(state.pos.X).toFixed(3);
+          document.getElementById("droY").textContent = Number(state.pos.Y).toFixed(3);
+          document.getElementById("droZ").textContent = Number(state.pos.Z).toFixed(3);
+          document.getElementById("droE").textContent = `${Number(state.pos.E0).toFixed(1)} / ${Number(state.pos.E1).toFixed(1)}`;
+          document.getElementById("liveToolHud").textContent = `Toolhead: X ${Number(state.pos.X).toFixed(2)}  Y ${Number(state.pos.Y).toFixed(2)}  Z ${Number(state.pos.Z).toFixed(2)}`;
+        }
+        if (state.axes_homed && state.axes_homed.length >= 3) {
+          ["X", "Y", "Z"].forEach((ax, i) => {
+            const el = document.getElementById("homed" + ax);
+            const isH = !!state.axes_homed[i];
+            el.textContent = isH ? "HOMED" : "UNHOMED";
+            el.className = "homed-badge " + (isH ? "homed-yes" : "homed-no");
+          });
+        }
+        if (state.endstops) {
+          updateEndstopBox("esX", "X", state.endstops.X);
+          updateEndstopBox("esY", "Y", state.endstops.Y);
+          updateEndstopBox("esZ", "Z", state.endstops.Z);
+          updateEndstopBox("esProbe", "Probe", state.endstops.Z_probe);
+        }
+        if (state.temps) {
+          const b = state.temps.bed, t0 = state.temps.t0, t1 = state.temps.t1;
+          document.getElementById("tempBed").textContent = `${Number(b.current).toFixed(1)} / ${Number(b.active).toFixed(0)}°C`;
+          document.getElementById("tempT0").textContent = `${Number(t0.current).toFixed(1)} / ${Number(t0.active).toFixed(0)}°C`;
+          const t1Cur = t1.current > 900 ? "OFF" : `${Number(t1.current).toFixed(1)}°C`;
+          document.getElementById("tempT1").textContent = `${t1Cur} / ${Number(t1.active).toFixed(0)}°C`;
+          const vStr = state.v_in ? ` • ${Number(state.v_in).toFixed(1)}V` : "";
+          document.getElementById("mcuBadge").textContent = `MCU ${Number(state.temps.mcu).toFixed(1)}°C${vStr}`;
+        }
+        if (state.job) {
+          jobState = state.job;
+          document.getElementById("jobProgressText").textContent = `${state.job.index} / ${state.job.total}`;
+          document.getElementById("jobElapsedText").textContent = `${state.job.elapsed}s`;
+          document.getElementById("jobActiveCmd").textContent = state.job.current_line || (state.job.running ? "Streaming..." : "Idle");
+          const pct = state.job.total > 0 ? Math.min(100, (state.job.index / state.job.total) * 100) : 0;
+          document.getElementById("jobProgressBar").style.width = `${pct}%`;
+        }
+        if (state.logs && state.logs.length > 0) {
+          const out = document.getElementById("consoleOutput");
+          state.logs.forEach(item => {
+            lastLogId = Math.max(lastLogId, item.id);
+            const div = document.createElement("div");
+            div.className = `log-line log-${item.dir}`;
+            const prefix = item.dir === "TX" ? ">> " : item.dir === "RX" ? "<< " : `[${item.dir}] `;
+            div.innerHTML = `<span class="log-time">${item.time}</span><span>${escapeHtml(prefix + item.text)}</span>`;
+            out.appendChild(div);
+          });
+          out.scrollTop = out.scrollHeight;
+        }
+        renderScene();
+      } catch (e) {}
+    }
+
+    function updateEndstopBox(id, label, val) {
+      const el = document.getElementById(id);
+      const v = (val || "unknown").toLowerCase();
+      const trig = v.includes("stopped") && !v.includes("not stopped");
+      el.textContent = `${label}: ${trig ? "TRIG" : "OPEN"}`;
+      el.className = "es-box " + (trig ? "triggered" : "open");
+    }
+
+    function escapeHtml(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    function setStep(val) {
+      currentStep = val;
+      document.querySelectorAll(".step-pill").forEach(el => el.classList.toggle("active", parseFloat(el.textContent) === val));
+    }
+
+    async function jogAxis(axis, dir) {
+      const dist = currentStep * dir;
+      const feed = axis === "Z" ? parseFloat(document.getElementById("zFeed").value || "180") : axis === "E" ? 300 : parseFloat(document.getElementById("xyFeed").value || "3000");
+      await fetch("/api/jog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ axis, distance: dist, feedrate: feed })
+      });
+      await pollBackendState();
+    }
+
+    async function jogDiag(dxSign, dySign) {
+      const dx = currentStep * dxSign, dy = currentStep * dySign;
+      const feed = parseFloat(document.getElementById("xyFeed").value || "3000");
+      await fetch("/api/jog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ axes: { X: dx, Y: dy }, feedrate: feed })
+      });
+      await pollBackendState();
+    }
+
+    async function sendCmd(command) {
+      await fetch("/api/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command })
+      });
+      await pollBackendState();
+    }
+
+    function promptSetAxis(axis) {
+      const cur = machinePos[axis] || 0;
+      const val = prompt(`Set current ${axis} work coordinate (G92 ${axis}...):`, cur);
+      if (val !== null && val.trim() !== "" && !isNaN(parseFloat(val))) sendCmd(`G92 ${axis}${parseFloat(val)}`);
+    }
+
+    function setBedTemp() { sendCmd(`M140 S${parseFloat(document.getElementById("targetBed").value || "0")}`); }
+    function setToolTemp(toolIdx) {
+      const t = parseFloat(document.getElementById("targetT" + toolIdx).value || "0");
+      sendCmd(`G10 P${toolIdx} S${t} R${t}\nT${toolIdx}`);
+    }
+
+    function handleCmdKey(e) {
+      if (e.key === "Enter") sendInputCommand();
+      else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (cmdHistory.length > 0 && historyIdx < cmdHistory.length - 1) {
+          historyIdx++;
+          e.target.value = cmdHistory[cmdHistory.length - 1 - historyIdx];
+        }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (historyIdx > 0) {
+          historyIdx--;
+          e.target.value = cmdHistory[cmdHistory.length - 1 - historyIdx];
+        } else { historyIdx = -1; e.target.value = ""; }
+      }
+    }
+
+    async function sendInputCommand() {
+      const inp = document.getElementById("cmdInput");
+      const val = inp.value.trim();
+      if (!val) return;
+      cmdHistory.push(val);
+      historyIdx = -1;
+      inp.value = "";
+      await sendCmd(val.split("|").map(s => s.trim()).join("\n"));
+    }
+
+    function clearConsole() { document.getElementById("consoleOutput").innerHTML = ""; }
+
+    window.addEventListener("keydown", e => {
+      if (!document.getElementById("kbJogToggle").checked) return;
+      const tag = document.activeElement ? document.activeElement.tagName : "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "ArrowUp") { e.preventDefault(); jogAxis("Y", 1); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); jogAxis("Y", -1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); jogAxis("X", -1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); jogAxis("X", 1); }
+      else if (e.key === "PageUp") { e.preventDefault(); jogAxis("Z", 1); }
+      else if (e.key === "PageDown") { e.preventDefault(); jogAxis("Z", -1); }
+    });
+
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        const content = ev.target.result;
+        if (file.name.toLowerCase().endsWith(".dxf")) {
+          const cutF = parseFloat(document.getElementById("gcodeCutFeed").value || "150");
+          const travelF = parseFloat(document.getElementById("gcodeTravelFeed").value || "3600");
+          const zF = Math.min(180, parseFloat(document.getElementById("gcodeZFeed").value || "150"));
+          const cutZ = parseFloat(document.getElementById("gcodeCutZ").value || "0.0");
+          const safeZ = parseFloat(document.getElementById("gcodeSafeZ").value || "5.0");
+          const res = await fetch("/api/dxf/convert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename: file.name,
+              dxf: content,
+              xy_cut_feed: cutF,
+              xy_travel_feed: travelF,
+              z_feed: zF,
+              cut_z: cutZ,
+              safe_z: safeZ
+            })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            currentFilename = data.filename;
+            document.getElementById("editorFileLabel").textContent = `DXF Converted: ${data.filename}`;
+            document.getElementById("gcodeEditor").value = data.gcode;
+            parseGCodeForVisualizer(data.gcode);
+            fitCameraToPath();
+            await pollBackendState();
+          }
+        } else {
+          currentFilename = file.name;
+          document.getElementById("editorFileLabel").textContent = `File: ${file.name}`;
+          document.getElementById("gcodeEditor").value = content;
+          await syncEditorToJob();
+          fitCameraToPath();
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function loadPresetProgram(preset) {
+      if (!preset) return;
+      if (["sleeve", "cf30_front", "cf30_back"].includes(preset)) {
+        try {
+          const res = await fetch(`/api/preset/${preset}`);
+          const data = await res.json();
+          if (data.ok) {
+            currentFilename = data.filename;
+            document.getElementById("editorFileLabel").textContent = `Loaded: ${data.filename}`;
+            document.getElementById("gcodeEditor").value = data.gcode;
+            document.getElementById("sampleSelect").value = "";
+            parseGCodeForVisualizer(data.gcode);
+            fitCameraToPath();
+            await pollBackendState();
+            return;
+          }
+        } catch (err) {}
+      }
+      let gcode = "";
+      if (preset === "square") {
+        gcode = ["G21", "G91", "G1 Z5 F180", "G1 X20 Y0 F2400", "G1 X0 Y20 F2400", "G1 X-20 Y0 F2400", "G1 X0 Y-20 F2400", "G1 Z-5 F180", "G90"].join("\n");
+      } else if (preset === "diamond") {
+        gcode = ["G21", "G91", "G1 Z4 F180", "G1 X15 Y15 F2400", "G1 X-15 Y15 F2400", "G1 X-15 Y-15 F2400", "G1 X15 Y-15 F2400", "G1 Z-4 F180", "G90"].join("\n");
+      } else if (preset === "z_cycle") {
+        gcode = ["G21", "G91", "G1 Z10 F180", "G4 P500", "G1 Z-10 F180", "G90"].join("\n");
+      } else if (preset === "circle") {
+        gcode = ["G21", "G91", "G1 Z3 F180", "G1 X10 Y0 F2000", "G1 X7 Y7 F2000", "G1 X0 Y10 F2000", "G1 X-7 Y7 F2000", "G1 X-10 Y0 F2000", "G1 X-7 Y-7 F2000", "G1 X0 Y-10 F2000", "G1 X7 Y-7 F2000", "G1 Z-3 F180", "G90"].join("\n");
+      }
+      currentFilename = `${preset}.gcode`;
+      document.getElementById("gcodeEditor").value = gcode;
+      document.getElementById("sampleSelect").value = "";
+      await syncEditorToJob();
+      fitCameraToPath();
+    }
+
+    function onEditorChanged() {
+      parseGCodeForVisualizer(document.getElementById("gcodeEditor").value);
+      renderScene();
+    }
+
+    async function applyFeedrateToGCode() {
+      const cutF = Math.max(1, Math.round(parseFloat(document.getElementById("gcodeCutFeed").value || "150")));
+      const travelF = Math.max(1, Math.round(parseFloat(document.getElementById("gcodeTravelFeed").value || "3600")));
+      const zF = Math.min(180, Math.max(1, Math.round(parseFloat(document.getElementById("gcodeZFeed").value || "150"))));
+      const cutZ = parseFloat(document.getElementById("gcodeCutZ").value || "0.0");
+      const safeZ = parseFloat(document.getElementById("gcodeSafeZ").value || "5.0");
+      document.getElementById("gcodeZFeed").value = zF;
+
+      const editor = document.getElementById("gcodeEditor");
+      const lines = editor.value.split(/\r?\n/);
+      const updated = lines.map(line => {
+        if (line.startsWith("; Safe Z:")) {
+          return `; Safe Z: +${safeZ.toFixed(2)} mm | Cut/Trace Z: ${cutZ.toFixed(2)} mm | Z Feed: ${zF} mm/min | XY Feed: ${cutF} mm/min`;
+        }
+        const parts = line.split(";");
+        let code = parts[0];
+        const comment = parts.length > 1 ? ";" + parts.slice(1).join(";") : "";
+        const upper = code.trim().toUpperCase();
+        if (!upper) return line;
+
+        if (/^G0?0(?:\s|$|[XYZEF])/.test(upper)) {
+          if (/F[\d.]+/i.test(code)) {
+            code = code.replace(/F[\d.]+/i, `F${travelF}`);
+          } else {
+            code = code.trimEnd() + ` F${travelF}` + (comment ? " " : "");
+          }
+        } else if (/^G0?1(?:\s|$|[XYZEF])/.test(upper)) {
+          const hasZ = /Z[-\d.]+/.test(upper);
+          const hasXY = /[XY][-\d.]+/.test(upper);
+          const targetF = (hasZ && !hasXY) ? zF : cutF;
+          if (hasZ && !hasXY) {
+            const isPlunge = comment.toLowerCase().includes("plunge") || comment.toLowerCase().includes("work height");
+            const isLift = comment.toLowerCase().includes("safe") || comment.toLowerCase().includes("retract") || comment.toLowerCase().includes("lift");
+            if (isPlunge) {
+              code = code.replace(/Z[-\d.]+/i, `Z${cutZ.toFixed(3)}`);
+            } else if (isLift) {
+              code = code.replace(/Z[-\d.]+/i, `Z${safeZ.toFixed(3)}`);
+            }
+          }
+          if (/F[\d.]+/i.test(code)) {
+            code = code.replace(/F[\d.]+/i, `F${targetF}`);
+          } else {
+            code = code.trimEnd() + ` F${targetF}` + (comment ? " " : "");
+          }
+        }
+        return code + comment;
+      });
+
+      editor.value = updated.join("\n");
+      await syncEditorToJob();
+    }
+
+    function downloadCurrentGCode() {
+      const gcode = document.getElementById("gcodeEditor").value;
+      const blob = new Blob([gcode], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentFilename || "Sleeve DXF - Sketch 4.gcode";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    async function syncEditorToJob() {
+      const gcode = document.getElementById("gcodeEditor").value;
+      parseGCodeForVisualizer(gcode);
+      renderScene();
+      await fetch("/api/job/load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: currentFilename, gcode })
+      });
+      await pollBackendState();
+    }
+
+    async function startJob() { await syncEditorToJob(); await fetch("/api/job/start", { method: "POST" }); await pollBackendState(); }
+    async function pauseJob() { await fetch("/api/job/pause", { method: "POST" }); await pollBackendState(); }
+    async function stopJob() { await fetch("/api/job/stop", { method: "POST" }); await pollBackendState(); }
+    async function stepJob() { if (jobState.total === 0) await syncEditorToJob(); await fetch("/api/job/step", { method: "POST" }); await pollBackendState(); }
+
+    function parseGCodeForVisualizer(text) {
+      toolpathSegments = [];
+      let rel = false;
+      let cur = { x: machinePos.X || 0, y: machinePos.Y || 0, z: machinePos.Z || 0 };
+      let wco = { x: 0, y: 0, z: 0 };
+      let minX = cur.x, maxX = cur.x, minY = cur.y, maxY = cur.y, minZ = cur.z, maxZ = cur.z;
+      let totalDist = 0, execIdx = 0;
+
+      const lines = text.split(/\r?\n/);
+      for (let i = 0; i < lines.length; i++) {
+        const clean = lines[i].split(";")[0].trim().toUpperCase();
+        if (!clean) continue;
+        execIdx++;
+        if (clean.startsWith("G90")) { rel = false; continue; }
+        if (clean.startsWith("G91")) { rel = true; continue; }
+        if (clean.startsWith("G92")) {
+          const gx = clean.match(/X([-\d.]+)/), gy = clean.match(/Y([-\d.]+)/), gz = clean.match(/Z([-\d.]+)/);
+          if (gx) wco.x = cur.x - parseFloat(gx[1]);
+          if (gy) wco.y = cur.y - parseFloat(gy[1]);
+          if (gz) wco.z = cur.z - parseFloat(gz[1]);
+          continue;
+        }
+        if (/^G0?[01](?:\s|$|[XYZEF])/.test(clean)) {
+          const isRapid = /^G0?0(?:\s|$|[XYZEF])/.test(clean);
+          let nx = cur.x, ny = cur.y, nz = cur.z;
+          const mx = clean.match(/X([-\d.]+)/), my = clean.match(/Y([-\d.]+)/), mz = clean.match(/Z([-\d.]+)/);
+          if (mx) nx = rel ? cur.x + parseFloat(mx[1]) : wco.x + parseFloat(mx[1]);
+          if (my) ny = rel ? cur.y + parseFloat(my[1]) : wco.y + parseFloat(my[1]);
+          if (mz) nz = rel ? cur.z + parseFloat(mz[1]) : wco.z + parseFloat(mz[1]);
+          if (nx !== cur.x || ny !== cur.y || nz !== cur.z) {
+            totalDist += Math.hypot(nx - cur.x, ny - cur.y, nz - cur.z);
+            toolpathSegments.push({ execIndex: execIdx, rapid: isRapid, from: { ...cur }, to: { x: nx, y: ny, z: nz } });
+            cur = { x: nx, y: ny, z: nz };
+            minX = Math.min(minX, nx); maxX = Math.max(maxX, nx);
+            minY = Math.min(minY, ny); maxY = Math.max(maxY, ny);
+            minZ = Math.min(minZ, nz); maxZ = Math.max(maxZ, nz);
+          }
+        }
+      }
+      pathBounds = { minX, maxX, minY, maxY, minZ, maxZ };
+      document.getElementById("pathStatsText").textContent = `Segments: ${toolpathSegments.length} | Path Length: ${totalDist.toFixed(1)} mm`;
+      document.getElementById("bboxLabel").textContent = `Path Span: ΔX ${(maxX - minX).toFixed(1)} × ΔY ${(maxY - minY).toFixed(1)} × ΔZ ${(maxZ - minZ).toFixed(1)} mm`;
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      renderScene();
+    }
+
+    function setupCanvasControls() {
+      canvas.addEventListener("contextmenu", e => e.preventDefault());
+      canvas.addEventListener("mousedown", e => {
+        dragState.active = true;
+        dragState.mode = (e.button === 2 || e.shiftKey) ? "pan" : "orbit";
+        dragState.lastX = e.clientX;
+        dragState.lastY = e.clientY;
+      });
+      window.addEventListener("mouseup", () => { dragState.active = false; });
+      window.addEventListener("mousemove", e => {
+        if (!dragState.active) return;
+        const dx = e.clientX - dragState.lastX, dy = e.clientY - dragState.lastY;
+        dragState.lastX = e.clientX; dragState.lastY = e.clientY;
+        if (dragState.mode === "orbit") {
+          cam.yaw -= dx * 0.008;
+          cam.pitch = Math.max(-1.45, Math.min(1.45, cam.pitch + dy * 0.008));
+        } else {
+          const panScale = cam.distance * 0.0018;
+          const cosY = Math.cos(cam.yaw), sinY = Math.sin(cam.yaw);
+          const cosP = Math.cos(cam.pitch), sinP = Math.sin(cam.pitch);
+          cam.target.x += (-dx * cosY + dy * sinY * sinP) * panScale;
+          cam.target.y += ( dx * sinY + dy * cosY * sinP) * panScale;
+          cam.target.z += ( dy * cosP) * panScale;
+        }
+        renderScene();
+      });
+      canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+        cam.distance = Math.max(15, Math.min(2500, cam.distance * (1 + e.deltaY * 0.001)));
+        renderScene();
+      }, { passive: false });
+    }
+
+    function setCameraPreset(preset) {
+      if (preset === "iso") { cam.yaw = -0.65; cam.pitch = 0.55; }
+      else if (preset === "top") { cam.yaw = 0; cam.pitch = 1.55; }
+      else if (preset === "front") { cam.yaw = 0; cam.pitch = 0.05; }
+      else if (preset === "side") { cam.yaw = -Math.PI / 2; cam.pitch = 0.05; }
+      renderScene();
+    }
+
+    function fitCameraToPath() {
+      parseGCodeForVisualizer(document.getElementById("gcodeEditor").value);
+      cam.target = {
+        x: (pathBounds.minX + pathBounds.maxX) / 2,
+        y: (pathBounds.minY + pathBounds.maxY) / 2,
+        z: (pathBounds.minZ + pathBounds.maxZ) / 2
+      };
+      const span = Math.max(40, pathBounds.maxX - pathBounds.minX, pathBounds.maxY - pathBounds.minY, pathBounds.maxZ - pathBounds.minZ);
+      cam.distance = span * 1.6;
+      renderScene();
+    }
+
+    function project3D(pt) {
+      const dx = pt.x - cam.target.x, dy = pt.y - cam.target.y, dz = pt.z - cam.target.z;
+      const cosY = Math.cos(cam.yaw), sinY = Math.sin(cam.yaw);
+      const x1 = dx * cosY - dy * sinY, y1 = dx * sinY + dy * cosY, z1 = dz;
+      const cosP = Math.cos(cam.pitch), sinP = Math.sin(cam.pitch);
+      const y2 = y1 * cosP - z1 * sinP, z2 = y1 * sinP + z1 * cosP;
+      const fov = Math.min(canvas.width, canvas.height) * 0.9;
+      const depth = cam.distance + y2;
+      if (depth <= 1) return null;
+      const scale = fov / depth;
+      return { x: canvas.width / 2 + x1 * scale, y: canvas.height / 2 - z2 * scale, scale };
+    }
+
+    function drawLine3D(a, b, color, width = 1.5, dash = []) {
+      const pa = project3D(a), pb = project3D(b);
+      if (!pa || !pb) return;
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width * window.devicePixelRatio;
+      if (dash.length) ctx.setLineDash(dash);
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function renderScene() {
+      if (!canvas.width || !canvas.height) return;
+      if (document.getElementById("followTool").checked) {
+        cam.target.x = machinePos.X; cam.target.y = machinePos.Y; cam.target.z = machinePos.Z;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const gridZ = Math.round(machinePos.Z / 10) * 10;
+      const centerGX = Math.round(cam.target.x / 20) * 20;
+      const centerGY = Math.round(cam.target.y / 20) * 20;
+      const gridHalf = 160, step = 20;
+
+      for (let g = -gridHalf; g <= gridHalf; g += step) {
+        const col = (g % 100 === 0) ? "rgba(71, 85, 105, 0.45)" : "rgba(30, 41, 59, 0.55)";
+        drawLine3D({ x: centerGX + g, y: centerGY - gridHalf, z: gridZ }, { x: centerGX + g, y: centerGY + gridHalf, z: gridZ }, col, 1);
+        drawLine3D({ x: centerGX - gridHalf, y: centerGY + g, z: gridZ }, { x: centerGX + gridHalf, y: centerGY + g, z: gridZ }, col, 1);
+      }
+
+      const axOrigin = { x: machinePos.X, y: machinePos.Y, z: machinePos.Z };
+      drawLine3D(axOrigin, { x: axOrigin.x + 25, y: axOrigin.y, z: axOrigin.z }, "#ef4444", 2.2);
+      drawLine3D(axOrigin, { x: axOrigin.x, y: axOrigin.y + 25, z: axOrigin.z }, "#10b981", 2.2);
+      drawLine3D(axOrigin, { x: axOrigin.x, y: axOrigin.y, z: axOrigin.z + 25 }, "#3b82f6", 2.2);
+
+      const showRapids = document.getElementById("showRapids").checked;
+      for (const seg of toolpathSegments) {
+        if (seg.rapid && !showRapids) continue;
+        const isDone = jobState.index > 0 && seg.execIndex <= jobState.index;
+        const color = isDone ? "#10b981" : seg.rapid ? "#38bdf8" : "#f59e0b";
+        drawLine3D(seg.from, seg.to, color, isDone ? 2.6 : 1.9, seg.rapid ? [5, 5] : []);
+      }
+
+      const tp = project3D({ x: machinePos.X, y: machinePos.Y, z: machinePos.Z });
+      if (tp) {
+        drawLine3D({ x: machinePos.X, y: machinePos.Y, z: machinePos.Z }, { x: machinePos.X, y: machinePos.Y, z: machinePos.Z + 16 }, "#f43f5e", 3);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(tp.x, tp.y, 6 * window.devicePixelRatio, 0, Math.PI * 2);
+        ctx.fillStyle = "#38bdf8";
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 14;
+        ctx.fill();
+        ctx.lineWidth = 2 * window.devicePixelRatio;
+        ctx.strokeStyle = "#ffffff";
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  </script>
+</body>
+</html>
